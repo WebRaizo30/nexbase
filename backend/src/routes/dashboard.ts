@@ -1,4 +1,5 @@
 import { Router } from "express";
+import type { AuthedRequest } from "../lib/auth-request.js";
 import { prisma } from "../lib/prisma.js";
 import { requireAuth } from "../middleware/auth.js";
 
@@ -8,7 +9,7 @@ const dashboardRouter = Router();
  * Single payload for the dashboard home: user snapshot, counts, subscription, latest demo metric row.
  */
 dashboardRouter.get("/summary", requireAuth, async (req, res) => {
-  const userId = req.userId!;
+  const userId = (req as AuthedRequest).userId;
 
   const [user, apiKeys, files, subscription, pulse] = await Promise.all([
     prisma.user.findUnique({

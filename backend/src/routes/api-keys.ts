@@ -1,6 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { Router } from "express";
 import { z } from "zod";
+import type { AuthedRequest } from "../lib/auth-request.js";
 import { prisma } from "../lib/prisma.js";
 import { requireAuth } from "../middleware/auth.js";
 
@@ -31,7 +32,7 @@ apiKeysRouter.post("/", requireAuth, async (req, res) => {
     return;
   }
 
-  const userId = req.userId!;
+  const userId = (req as AuthedRequest).userId;
   const key = generateApiKey();
 
   try {
@@ -54,7 +55,7 @@ apiKeysRouter.post("/", requireAuth, async (req, res) => {
 });
 
 apiKeysRouter.get("/", requireAuth, async (req, res) => {
-  const userId = req.userId!;
+  const userId = (req as AuthedRequest).userId;
   const rows = await prisma.apiKey.findMany({
     where: { userId },
     orderBy: { createdAt: "desc" },
@@ -71,7 +72,7 @@ apiKeysRouter.get("/", requireAuth, async (req, res) => {
 });
 
 apiKeysRouter.delete("/:id", requireAuth, async (req, res) => {
-  const userId = req.userId!;
+  const userId = (req as AuthedRequest).userId;
   const id = req.params.id?.trim();
   if (!id) {
     res.status(400).json({ error: "Missing id" });

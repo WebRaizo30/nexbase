@@ -1,4 +1,3 @@
-import "./register-express-request-userid.js";
 import "dotenv/config";
 import cors from "cors";
 import express from "express";

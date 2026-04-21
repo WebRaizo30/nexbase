@@ -2,6 +2,7 @@ import { Router } from "express";
 import type { Request, Response } from "express";
 import type Stripe from "stripe";
 import { z } from "zod";
+import type { AuthedRequest } from "../lib/auth-request.js";
 import { prisma } from "../lib/prisma.js";
 import {
   respondBillingStripeNotConfigured,
@@ -75,7 +76,7 @@ billingRouter.post("/create-checkout", requireAuth, async (req, res) => {
     return;
   }
 
-  const userId = req.userId!;
+  const userId = (req as AuthedRequest).userId;
 
   if (!process.env.STRIPE_SECRET_KEY?.trim()) {
     respondBillingStripeNotConfigured(res);
@@ -138,7 +139,7 @@ billingRouter.post("/create-checkout", requireAuth, async (req, res) => {
 });
 
 billingRouter.post("/portal", requireAuth, async (req, res) => {
-  const userId = req.userId!;
+  const userId = (req as AuthedRequest).userId;
 
   if (!process.env.STRIPE_SECRET_KEY?.trim()) {
     respondBillingStripeNotConfigured(res);
@@ -173,7 +174,7 @@ billingRouter.post("/portal", requireAuth, async (req, res) => {
 });
 
 billingRouter.get("/subscription", requireAuth, async (req, res) => {
-  const userId = req.userId!;
+  const userId = (req as AuthedRequest).userId;
   const subscription = await prisma.subscription.findUnique({
     where: { userId },
   });

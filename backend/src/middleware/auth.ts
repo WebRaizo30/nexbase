@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
+import type { AuthedRequest } from "../lib/auth-request.js";
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
@@ -31,7 +32,7 @@ export function requireAuth(req: Request, res: Response, next: NextFunction): vo
       res.status(401).json({ error: "Invalid token payload" });
       return;
     }
-    req.userId = userId;
+    (req as AuthedRequest).userId = userId;
     next();
   } catch {
     res.status(401).json({ error: "Invalid or expired token" });

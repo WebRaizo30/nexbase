@@ -2,6 +2,7 @@ import { Router } from "express";
 import bcrypt from "bcryptjs";
 import jwt, { type SignOptions } from "jsonwebtoken";
 import { z } from "zod";
+import type { AuthedRequest } from "../lib/auth-request.js";
 import { prisma } from "../lib/prisma.js";
 import { requireAuth } from "../middleware/auth.js";
 import { sendWelcomeEmail } from "../services/email.js";
@@ -123,7 +124,7 @@ router.post("/logout", (_req, res) => {
 });
 
 router.get("/me", requireAuth, async (req, res) => {
-  const userId = req.userId!;
+  const userId = (req as AuthedRequest).userId;
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: { id: true, email: true, name: true, role: true, createdAt: true },

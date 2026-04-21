@@ -2,6 +2,7 @@ import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { Router } from "express";
 import multer from "multer";
+import type { AuthedRequest } from "../lib/auth-request.js";
 import { prisma } from "../lib/prisma.js";
 import { respondS3NotConfigured } from "../lib/s3-setup.js";
 import { requireAuth } from "../middleware/auth.js";
@@ -64,7 +65,7 @@ filesRouter.post(
     });
   },
   async (req, res) => {
-    const userId = req.userId!;
+    const userId = (req as AuthedRequest).userId;
     const file = req.file;
     if (!file?.buffer) {
       res.status(400).json({ error: 'Expected multipart field "file"' });
@@ -150,7 +151,7 @@ filesRouter.get(
     next();
   },
   async (req, res) => {
-    const userId = req.userId!;
+    const userId = (req as AuthedRequest).userId;
     const rows = await prisma.file.findMany({
       where: { userId },
       orderBy: { createdAt: "desc" },
@@ -189,7 +190,7 @@ filesRouter.delete(
     next();
   },
   async (req, res) => {
-    const userId = req.userId!;
+    const userId = (req as AuthedRequest).userId;
     const id = req.params.id?.trim();
     if (!id) {
       res.status(400).json({ error: "Missing id" });

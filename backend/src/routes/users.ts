@@ -1,6 +1,7 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
+import type { AuthedRequest } from "../lib/auth-request.js";
 import { prisma } from "../lib/prisma.js";
 import { requireAuth } from "../middleware/auth.js";
 
@@ -28,7 +29,7 @@ const deleteAccountBody = z.object({
 });
 
 usersRouter.get("/profile", requireAuth, async (req, res) => {
-  const userId = req.userId!;
+  const userId = (req as AuthedRequest).userId;
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: { id: true, email: true, name: true, role: true, createdAt: true },
@@ -47,7 +48,7 @@ usersRouter.put("/profile", requireAuth, async (req, res) => {
     return;
   }
 
-  const userId = req.userId!;
+  const userId = (req as AuthedRequest).userId;
   const { name, email, currentPassword, newPassword } = parsed.data;
 
   if (name === undefined && email === undefined && newPassword === undefined) {
@@ -107,7 +108,7 @@ usersRouter.delete("/account", requireAuth, async (req, res) => {
     return;
   }
 
-  const userId = req.userId!;
+  const userId = (req as AuthedRequest).userId;
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) {
     res.status(404).json({ error: "User not found" });
