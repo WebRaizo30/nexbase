@@ -2,6 +2,22 @@ import { clearAuthToken, getAuthToken } from "./auth";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 
+const FETCH_TIMEOUT_MS = 45_000;
+
+function fetchTimeoutSignal(existing?: AbortSignal): AbortSignal | undefined {
+  if (typeof AbortSignal === "undefined" || !("timeout" in AbortSignal)) {
+    return existing;
+  }
+  const t = AbortSignal.timeout(FETCH_TIMEOUT_MS);
+  if (!existing) {
+    return t;
+  }
+  if (typeof AbortSignal.any === "function") {
+    return AbortSignal.any([t, existing]);
+  }
+  return existing;
+}
+
 export class ApiError extends Error {
   constructor(
     public status: number,
@@ -32,10 +48,29 @@ export async function apiJson<T>(
   }
   Object.entries(authHeaders(token)).forEach(([k, v]) => headers.set(k, v));
 
-  const res = await fetch(`${API_BASE}${path}`, {
-    ...init,
-    headers,
-  });
+  const url = `${API_BASE}${path}`;
+  const signal = fetchTimeoutSignal(init.signal);
+
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      ...init,
+      headers,
+      ...(signal ? { signal } : {}),
+    });
+  } catch (e) {
+    const name = e instanceof Error ? e.name : "";
+    if (name === "AbortError") {
+      throw new ApiError(0, {
+        error:
+          "Request timed out or was cancelled. On production, set NEXT_PUBLIC_API_URL in Vercel (e.g. /_/backend for Services).",
+      });
+    }
+    throw new ApiError(0, {
+      error:
+        "Network error — could not reach the API. Check NEXT_PUBLIC_API_URL and that the backend is deployed.",
+    });
+  }
 
   const text = await res.text();
   let data: unknown = null;
@@ -61,12 +96,26 @@ export async function apiJson<T>(
 export async function apiUpload<T>(path: string, form: FormData): Promise<T> {
   const token = getAuthToken();
   const headers = new Headers(authHeaders(token));
+  const url = `${API_BASE}${path}`;
+  const signal = fetchTimeoutSignal();
 
-  const res = await fetch(`${API_BASE}${path}`, {
-    method: "POST",
-    body: form,
-    headers,
-  });
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: "POST",
+      body: form,
+      headers,
+      ...(signal ? { signal } : {}),
+    });
+  } catch (e) {
+    const name = e instanceof Error ? e.name : "";
+    if (name === "AbortError") {
+      throw new ApiError(0, {
+        error: "Upload timed out. Check your connection and NEXT_PUBLIC_API_URL.",
+      });
+    }
+    throw new ApiError(0, { error: "Network error during upload." });
+  }
 
   const text = await res.text();
   let data: unknown = null;
