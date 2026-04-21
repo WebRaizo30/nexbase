@@ -9,6 +9,7 @@ import { dashboardRouter } from "./routes/dashboard.js";
 import { analyticsRouter } from "./routes/analytics.js";
 import { filesRouter } from "./routes/files.js";
 import { usersRouter } from "./routes/users.js";
+import { prisma } from "./lib/prisma.js";
 
 const app = express();
 const PORT = Number(process.env.PORT) || 4000;
@@ -52,6 +53,27 @@ app.use(express.json({ limit: "1mb" }));
 
 app.get("/health", (_req, res) => {
   res.json({ ok: true });
+});
+
+/** DB connectivity (Prisma). /health does not touch the database. */
+app.get("/health/db", async (_req, res) => {
+  const ms = Number(process.env.HEALTH_DB_TIMEOUT_MS) || 8_000;
+  try {
+    await Promise.race([
+      prisma.$queryRaw`SELECT 1`,
+      new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error("timeout")), ms);
+      }),
+    ]);
+    res.json({ ok: true, db: true });
+  } catch {
+    res.status(503).json({
+      ok: false,
+      db: false,
+      hint:
+        "PostgreSQL unreachable from this host. On Vercel + Supabase use the Transaction pooler URI (port 6543) with ?pgbouncer=true&connection_limit=1, not only the direct :5432 URL.",
+    });
+  }
 });
 
 app.use("/api/auth", authRouter);
