@@ -1,0 +1,48 @@
+# Dependencies
+node_modules/
+
+# Environment and secrets (never commit real values)
+.env
+.env.*
+!.env.example
+!.env*.example
+*.pem
+*service-account*.json
+
+# Local-only docs (not published to GitHub)
+NexBase_Project_Doc.md
+
+# Next.js / Vercel
+.next/
+out/
+.vercel
+
+# Build / coverage
+dist/
+build/
+coverage/
+*.tsbuildinfo
+
+# Logs and debug
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE / editor
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json.example
+*.swp
+*.swo
+
+# Testing / temp
+.turbo
+*.local

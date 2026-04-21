@@ -1,0 +1,63 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  password     String
+  name         String?
+  /// "user" | "admin"
+  role         String    @default("user")
+  createdAt    DateTime  @default(now())
+  subscription Subscription?
+  apiKeys      ApiKey[]
+  files        File[]
+}
+
+/// Demo / seeded metrics for dashboard charts (not a substitute for real product analytics).
+model AnalyticsDaily {
+  id           String   @id @default(cuid())
+  date         DateTime @unique @db.Date
+  signups      Int      @default(0)
+  activeUsers  Int      @default(0)
+  apiCalls     Int      @default(0)
+  revenueCents Int      @default(0)
+}
+
+model Subscription {
+  id               String   @id @default(cuid())
+  userId           String   @unique
+  stripeCustomerId String   @unique
+  stripeSubId      String   @unique
+  plan             String
+  status           String
+  currentPeriodEnd DateTime
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model ApiKey {
+  id        String    @id @default(cuid())
+  userId    String
+  key       String    @unique
+  name      String
+  createdAt DateTime  @default(now())
+  lastUsed  DateTime?
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model File {
+  id        String   @id @default(cuid())
+  userId    String
+  url       String
+  key       String
+  name      String
+  size      Int
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
