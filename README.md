@@ -4,6 +4,16 @@
 </p>
 
 <p align="center">
+  <a href="https://nexbase-five.vercel.app/"><strong>Live demo → nexbase-five.vercel.app</strong></a>
+</p>
+
+<p align="center">
+  <a href="https://nexbase-five.vercel.app/">
+    <img src="./NexBaseThumbnail.png" alt="NexBase SaaS starter — CRT-style marketing and dashboard preview" width="920" />
+  </a>
+</p>
+
+<p align="center">
   <img src="https://img.shields.io/badge/Next.js-14-black?logo=next.js&logoColor=white" alt="Next.js" />
   <img src="https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white" alt="TypeScript" />
   <img src="https://img.shields.io/badge/Prisma-ORM-2D3748?logo=prisma&logoColor=white" alt="Prisma" />
@@ -16,12 +26,29 @@
 
 ---
 
-## Why NexBase
+## What is this?
 
-- **Full stack, one repo** — Marketing site, auth, dashboard, admin, billing hooks, file uploads, and analytics UI wired to a typed REST API.
-- **Optional integrations** — Stripe, S3, and Resend degrade gracefully: missing config returns `503` with `setupSteps` where applicable, so the app still runs for demos and iteration.
-- **CRT-inspired UI** — Distinctive dashboard aesthetic (dark/light), Recharts analytics, responsive layouts.
-- **Ops-friendly** — Health route, seedable demo data, `.env.example` files, and deployment notes below.
+**NexBase** is a **single-repo full-stack** SaaS starter: marketing site, auth, dashboard, admin, billing hooks, file uploads, and analytics UI wired to a typed REST API.
+
+| | |
+|--|--|
+| **Live demo** | [nexbase-five.vercel.app](https://nexbase-five.vercel.app/) |
+| **Highlights** | 40+ API routes; CRT-style themes (phosphor · paper); Stripe, S3, and Resend **degrade gracefully** when not configured |
+| **Deploy** | Frontend → Vercel; API → Railway, Render, Fly.io, etc. (joined via `NEXT_PUBLIC_API_URL`) |
+
+## Table of contents
+
+- [Architecture](#architecture)
+- [Repository layout](#repository-layout)
+- [Prerequisites](#prerequisites)
+- [Local development](#local-development)
+- [Environment variables](#environment-variables)
+- [Production deployment](#production-deployment)
+- [Scripts reference](#scripts-reference)
+- [Customization](#customization)
+- [Security checklist](#security-checklist)
+- [API surface (overview)](#api-surface-overview)
+- [License](#license)
 
 ## Architecture
 
@@ -53,6 +80,7 @@ NexBase/
 ├── frontend/          # Next.js app (deploy to Vercel)
 ├── backend/           # Express API (deploy to Railway, Render, Fly.io, etc.)
 ├── nexbase.config.ts  # Product name, plans copy, feature flags
+├── NexBaseThumbnail.png
 └── README.md
 ```
 
