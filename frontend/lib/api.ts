@@ -4,12 +4,12 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 
 const FETCH_TIMEOUT_MS = 45_000;
 
-function fetchTimeoutSignal(existing?: AbortSignal): AbortSignal | undefined {
+function fetchTimeoutSignal(existing?: AbortSignal | null): AbortSignal | undefined {
   if (typeof AbortSignal === "undefined" || !("timeout" in AbortSignal)) {
-    return existing;
+    return existing ?? undefined;
   }
   const t = AbortSignal.timeout(FETCH_TIMEOUT_MS);
-  if (!existing) {
+  if (existing == null) {
     return t;
   }
   if (typeof AbortSignal.any === "function") {
