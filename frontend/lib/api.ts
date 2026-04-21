@@ -1,8 +1,41 @@
 import { clearAuthToken, getAuthToken } from "./auth";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
-
 const FETCH_TIMEOUT_MS = 45_000;
+
+/**
+ * Resolves the API base URL for `fetch`.
+ * On the live site (non-localhost), if env was missing at build time the bundle still
+ * defaults to localhost — browsers block that from https, causing "network error".
+ * Same-origin Vercel Services use `/_/backend`.
+ */
+export function getApiBase(): string {
+  const env = process.env.NEXT_PUBLIC_API_URL?.trim();
+
+  if (typeof window !== "undefined") {
+    const host = window.location.hostname;
+    const isLocal = host === "localhost" || host === "127.0.0.1";
+
+    if (!isLocal) {
+      const bakedLocalOnly =
+        !env ||
+        env === "http://localhost:4000" ||
+        /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?\/?$/i.test(env);
+      if (bakedLocalOnly) {
+        return `${window.location.origin}/_/backend`;
+      }
+    }
+
+    if (env) {
+      return env.replace(/\/$/, "");
+    }
+    return isLocal ? "http://localhost:4000" : `${window.location.origin}/_/backend`;
+  }
+
+  if (env) {
+    return env.replace(/\/$/, "");
+  }
+  return "http://localhost:4000";
+}
 
 function fetchTimeoutSignal(existing?: AbortSignal | null): AbortSignal | undefined {
   if (typeof AbortSignal === "undefined" || !("timeout" in AbortSignal)) {
@@ -48,7 +81,7 @@ export async function apiJson<T>(
   }
   Object.entries(authHeaders(token)).forEach(([k, v]) => headers.set(k, v));
 
-  const url = `${API_BASE}${path}`;
+  const url = `${getApiBase()}${path}`;
   const signal = fetchTimeoutSignal(init.signal);
 
   let res: Response;
@@ -96,7 +129,7 @@ export async function apiJson<T>(
 export async function apiUpload<T>(path: string, form: FormData): Promise<T> {
   const token = getAuthToken();
   const headers = new Headers(authHeaders(token));
-  const url = `${API_BASE}${path}`;
+  const url = `${getApiBase()}${path}`;
   const signal = fetchTimeoutSignal();
 
   let res: Response;
@@ -137,5 +170,3 @@ export async function apiUpload<T>(path: string, form: FormData): Promise<T> {
 
   return data as T;
 }
-
-export { API_BASE };
