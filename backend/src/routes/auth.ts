@@ -43,77 +43,94 @@ function signToken(userId: string): string {
 }
 
 router.post("/register", async (req, res) => {
-  const parsed = registerBody.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: "Invalid body", details: parsed.error.flatten() });
-    return;
-  }
-
-  const { email, password, name } = parsed.data;
-  const existing = await prisma.user.findUnique({ where: { email } });
-  if (existing) {
-    res.status(409).json({ error: "Email already registered" });
-    return;
-  }
-
-  const hashed = await bcrypt.hash(password, 12);
-  const role = resolveRoleForNewUser(email);
-  const user = await prisma.user.create({
-    data: { email, password: hashed, name: name ?? null, role },
-    select: { id: true, email: true, name: true, role: true, createdAt: true },
-  });
-
-  sendWelcomeEmail({ to: user.email, name: user.name });
-
-  let token: string;
   try {
-    token = signToken(user.id);
-  } catch {
-    res.status(500).json({ error: "Server misconfiguration" });
-    return;
-  }
+    const parsed = registerBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: "Invalid body", details: parsed.error.flatten() });
+      return;
+    }
 
-  res.status(201).json({ user, token });
+    const { email, password, name } = parsed.data;
+    const existing = await prisma.user.findUnique({ where: { email } });
+    if (existing) {
+      res.status(409).json({ error: "Email already registered" });
+      return;
+    }
+
+    const hashed = await bcrypt.hash(password, 12);
+    const role = resolveRoleForNewUser(email);
+    const user = await prisma.user.create({
+      data: { email, password: hashed, name: name ?? null, role },
+      select: { id: true, email: true, name: true, role: true, createdAt: true },
+    });
+
+    sendWelcomeEmail({ to: user.email, name: user.name });
+
+    let token: string;
+    try {
+      token = signToken(user.id);
+    } catch {
+      res.status(500).json({ error: "Server misconfiguration" });
+      return;
+    }
+
+    res.status(201).json({ user, token });
+  } catch (e) {
+    console.error("POST /api/auth/register", e);
+    if (!res.headersSent) {
+      res.status(500).json({
+        error:
+          "Registration failed. Ensure the database schema is applied (run `npx prisma db push` against this DATABASE_URL).",
+      });
+    }
+  }
 });
 
 router.post("/login", async (req, res) => {
-  const parsed = loginBody.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: "Invalid body", details: parsed.error.flatten() });
-    return;
-  }
-
-  const { email, password } = parsed.data;
-  const user = await prisma.user.findUnique({ where: { email } });
-  if (!user) {
-    res.status(401).json({ error: "Invalid email or password" });
-    return;
-  }
-
-  const ok = await bcrypt.compare(password, user.password);
-  if (!ok) {
-    res.status(401).json({ error: "Invalid email or password" });
-    return;
-  }
-
-  let token: string;
   try {
-    token = signToken(user.id);
-  } catch {
-    res.status(500).json({ error: "Server misconfiguration" });
-    return;
-  }
+    const parsed = loginBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: "Invalid body", details: parsed.error.flatten() });
+      return;
+    }
 
-  res.json({
-    token,
-    user: {
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      role: user.role,
-      createdAt: user.createdAt,
-    },
-  });
+    const { email, password } = parsed.data;
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      res.status(401).json({ error: "Invalid email or password" });
+      return;
+    }
+
+    const ok = await bcrypt.compare(password, user.password);
+    if (!ok) {
+      res.status(401).json({ error: "Invalid email or password" });
+      return;
+    }
+
+    let token: string;
+    try {
+      token = signToken(user.id);
+    } catch {
+      res.status(500).json({ error: "Server misconfiguration" });
+      return;
+    }
+
+    res.json({
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        createdAt: user.createdAt,
+      },
+    });
+  } catch (e) {
+    console.error("POST /api/auth/login", e);
+    if (!res.headersSent) {
+      res.status(500).json({ error: "Login failed" });
+    }
+  }
 });
 
 /**
@@ -124,16 +141,23 @@ router.post("/logout", (_req, res) => {
 });
 
 router.get("/me", requireAuth, async (req, res) => {
-  const userId = (req as AuthedRequest).userId;
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { id: true, email: true, name: true, role: true, createdAt: true },
-  });
-  if (!user) {
-    res.status(404).json({ error: "User not found" });
-    return;
+  try {
+    const userId = (req as AuthedRequest).userId;
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, email: true, name: true, role: true, createdAt: true },
+    });
+    if (!user) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+    res.json({ user });
+  } catch (e) {
+    console.error("GET /api/auth/me", e);
+    if (!res.headersSent) {
+      res.status(500).json({ error: "Failed to load user" });
+    }
   }
-  res.json({ user });
 });
 
 export { router as authRouter };
